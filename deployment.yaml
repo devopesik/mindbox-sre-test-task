@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  labels:
+    app: web-app
+spec:
+  replicas: 1 # Минимальная нагрузка ночью
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%   # Дополнительные поды при обновлении
+      maxUnavailable: 25% # Минимизация downtime
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      affinity:
+        podAntiAffinity: # Стараемся не размещать поды в одной зоне
+          preferredDuringSchedulingIgnoredDuringExecution: 
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - web-app
+                topologyKey: "kubernetes.io/zone"
+        nodeAffinity: # Убедится, что деплоимся на правильные ноды
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: zone
+                    operator: In
+                    values:
+                      - zone-a
+                      - zone-b
+                      - zone-c
+      topologySpreadConstraints: # Равномерно распределяем поды по топологии
+        - maxSkew: 1
+          topologyKey: kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: web-app
+      containers:
+        - name: web-app
+          image: your-registry/web-app:release-1.0
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m     # Базовое потребление после инициализации
+              memory: 128Mi # Равномерное потребление памяти
+            limits:
+              cpu: 1        # Пики на старте, далее не более 1 CPU
+              memory: 256Mi # Небольшой запас на случай пиков
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10 # Приложение может до 300 секунд стартовать
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      terminationGracePeriodSeconds: 30
