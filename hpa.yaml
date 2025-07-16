@@ -15,4 +15,4 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70 # Скейлимся при 70% загрузке CPU
+          averageUtilization: 150 # Скейлимся при 150% загрузке CPU (150m)
