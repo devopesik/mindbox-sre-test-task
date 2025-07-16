@@ -7,7 +7,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: web-app
-  minReplicas: 1        # Минимум подов ночью
+  minReplicas: 2        # Минимум подов ночью + отказоустойчивость
   maxReplicas: 4        # Максимум — по пиковым нагрузкам
   metrics:
     - type: Resource

@@ -5,12 +5,12 @@ metadata:
   labels:
     app: web-app
 spec:
-  replicas: 1 # Минимальная нагрузка ночью
+  replicas: 2 # Минимальная нагрузка ночью + отказоустойчивость
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 25%   # Дополнительные поды при обновлении
-      maxUnavailable: 25% # Минимизация downtime
+      maxSurge: 50%   # Дополнительные поды при обновлении
+      maxUnavailable: 50% # Минимизация downtime
   selector:
     matchLabels:
       app: web-app
@@ -60,12 +60,12 @@ spec:
             limits:
               cpu: 1        # Пики на старте, далее не более 1 CPU
               memory: 256Mi # Небольшой запас на случай пиков
-          startupProbe:
+          startupProbe: 
             httpGet:
               path: /healthz
               port: 8080
-            failureThreshold: 30
-            periodSeconds: 10 # Приложение может до 300 секунд стартовать
+            failureThreshold: 6
+            periodSeconds: 5 # Приложение может до 30 секунд стартовать
           readinessProbe:
             httpGet:
               path: /ready
